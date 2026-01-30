@@ -129,10 +129,10 @@ class MemrefStreamGenericLegalize(RewritePattern):
                 legalizations[i] = legal
         if not legalizations:
             return
-        if op.iterator_types.data[-1].data != IteratorType.PARALLEL:
-            raise DiagnosticException(
-                "iterators other than 'parallel' are not supported yet"
-            )
+        # if op.iterator_types.data[-1].data != IteratorType.PARALLEL:
+        #     raise DiagnosticException(
+        #         "iterators other than 'parallel' are not supported yet"
+        #     )
         # Check that vectorized bounds are compatible with all no. of lanes
         # involved in legalizations
         innermost_bound = op.bounds.data[-1].value.data
