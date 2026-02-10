@@ -135,6 +135,9 @@ class MemrefStreamGenericLegalize(RewritePattern):
         #     )
         # Check that vectorized bounds are compatible with all no. of lanes
         # involved in legalizations
+        print(f"Data[-1]: {op.bounds.data[-1]}")
+        print(f"value: {op.bounds.data[-1].value}")
+        print(f"data: {op.bounds.data[-1].value.data}")
         innermost_bound = op.bounds.data[-1].value.data
         vector_lengths: set[int] = set()
         for i, v in legalizations.items():
