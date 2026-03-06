@@ -107,7 +107,7 @@ class Broadcast(IRDLOperation):
 
 @irdl_op_definition
 class Reduction(IRDLOperation):
-    name = "vector.reduce"
+    name = "vector.reduction"
     source: Operand = operand_def(VectorType)
     res: OpResult = result_def(VectorType)
 
