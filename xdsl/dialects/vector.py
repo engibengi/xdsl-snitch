@@ -105,6 +105,27 @@ class Broadcast(IRDLOperation):
             result_types=[VectorType(SSAValue.get(source).type, [1])],
         )
 
+@irdl_op_definition
+class Reduction(IRDLOperation):
+    name = "vector.reduce"
+    source: Operand = operand_def(VectorType)
+    res: OpResult = result_def(VectorType)
+
+    def verify_(self):
+        assert isa(self.source.type, VectorType[Attribute])
+
+        if self.source.type.element_type != self.res.type:
+            raise VerifyException(
+                "Source vector and result operand must have the same element type."
+            )
+
+    @staticmethod
+    def get(source: Operation | SSAValue) -> Reduction:
+        return Reduction.build(
+            operands=[source],
+            result_types=[SSAValue.get(source).type],
+        )
+
 
 @irdl_op_definition
 class FMA(IRDLOperation):
@@ -291,6 +312,6 @@ class Createmask(IRDLOperation):
 
 Vector = Dialect(
     "vector",
-    [Load, Store, Broadcast, FMA, Maskedload, Maskedstore, Print, Createmask],
+    [Load, Store, Broadcast, FMA, Maskedload, Maskedstore, Print, Createmask, Reduction],
     [],
 )
