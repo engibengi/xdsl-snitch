@@ -109,9 +109,12 @@ class Broadcast(IRDLOperation):
 class Reduction(IRDLOperation):
     name = "vector.reduction"
     source: Operand = operand_def(VectorType)
-    res: OpResult = result_def(VectorType)
+    res: OpResult = result_def(AnyAttr())
 
     def verify_(self):
+        print("----------------------------")
+        print("Reduction verify")
+        print("----------------------------")
         assert isa(self.source.type, VectorType[Attribute])
 
         if self.source.type.element_type != self.res.type:
