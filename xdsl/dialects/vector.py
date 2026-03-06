@@ -24,6 +24,7 @@ from xdsl.irdl import (
 )
 from xdsl.utils.exceptions import VerifyException
 from xdsl.utils.hints import assert_isa, isa
+from xdsl.parser import Parser
 
 
 @irdl_op_definition
@@ -121,6 +122,22 @@ class Reduction(IRDLOperation):
             raise VerifyException(
                 "Source vector and result operand must have the same element type."
             )
+
+    @classmethod
+    def parse(cls, parser: Parser):
+        arg = parser.parse_identifier()
+        parser.parse_punctuation(",")
+        operand1 = parser.parse_unresolved_operand()
+        parser.parse_punctuation(",")
+        operand2 = parser.parse_unresolved_operand()
+        parser.parse_punctuation(":")
+        input_type = parser.parse_type()
+        (operand1, operand2) = parser.resolve_operands(
+            [operand1, operand2], 2 * [input_type], parser.pos
+        )
+
+        return cls(operand1, operand2, arg)
+
 
     @staticmethod
     def get(source: Operation | SSAValue) -> Reduction:

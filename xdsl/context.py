@@ -119,7 +119,6 @@ class MLContext:
         are allowed in the context, in which case return an UnregisteredOp.
         """
         # If the operation is already loaded, returns it.
-        print(self._loaded_ops)
         if name in self._loaded_ops:
             return self._loaded_ops[name]
 

@@ -737,7 +737,6 @@ class Parser(AttrParser):
         Raises an error if the operation is not registered, and if unregistered
         dialects are not allowed.
         """
-        print("About to print loaded_ops!!!")
         op_type = self.ctx.get_optional_op(name)
         if op_type is not None:
             return op_type
