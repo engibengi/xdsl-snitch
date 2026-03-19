@@ -241,7 +241,7 @@ class BinaryOperationWithFastMath(Generic[_T], BinaryOperation[_T]):
             flags = FastMathFlagsAttr(FastMathFlagsAttr.parse_parameter(parser))
         parser.parse_punctuation(":")
         result_type = parser.parse_type()
-        (lhs, rhs) = parser.resolve_operands([lhs, rhs], 2 * [result_type], parser.pos)
+        (lhs, rhs) = parser.resolve_operands([lhs, rhs], [result_type, result_type | VectorType[result_type]], parser.pos)
         return cls(lhs, rhs, flags, result_type)
 
     def print(self, printer: Printer):
