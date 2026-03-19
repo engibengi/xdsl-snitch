@@ -180,7 +180,7 @@ class BinaryOperation(IRDLOperation, Generic[_T]):
     T = Annotated[Attribute, ConstraintVar("T"), _T]
 
     lhs: Operand = operand_def(T)
-    rhs: Operand = operand_def(AnyOf([T, VectorType[T]]))
+    rhs: Operand = operand_def(T)
     result: OpResult = result_def(T)
 
     def __init__(
