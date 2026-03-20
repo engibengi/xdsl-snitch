@@ -125,6 +125,9 @@ class MemrefStreamGenericLegalize(RewritePattern):
         legalizations: dict[int, StreamingVectorLegalizationType] = {}
         args_len = len(op.body.block.args)
         for i, arg in enumerate(op.body.block.args):
+            print(args_len)
+            print(i)
+            print(op.iterator_types.data[-1].data)
             if op.iterator_types.data[-1].data == IteratorType.PARALLEL and i >= args_len - 2:
                 print("Going here")
                 continue
