@@ -126,15 +126,15 @@ class MemrefStreamGenericLegalize(RewritePattern):
     ) -> None:
         # Collect block arguments that need to be legalized
         legalizations: dict[int, StreamingVectorLegalizationType] = {}
-        # args_len = len(op.body.block.args)
+        args_len = len(op.body.block.args)
         for i, arg in enumerate(op.body.block.args):
             # print(args_len)
             # print(i)
             # print(op.iterator_types.data[-1].data)
             # print(arg)
-            # if op.iterator_types.data[-1].data == IteratorType.REDUCTION and i >= args_len - 1:
-            #     print("Going here")
-            #     continue
+            if op.iterator_types.data[-1].data == IteratorType.REDUCTION and i >= args_len - 1:
+                print("Going here")
+                continue
             legal = _legalize_attr(arg.type)
             if not isinstance(legal, StreamingAlreadyLegalType):
                 legalizations[i] = legal
