@@ -34,10 +34,6 @@ class LowerBinaryFloatVectorOp(RewritePattern):
     def match_and_rewrite(self, op: Operation, rewriter: PatternRewriter) -> None:
         if not isinstance(op, self.arith_op_cls):
             return
-        print("OP _________________________________________")
-        print(op.operands)
-        print([o for o in op.operands])
-        print("____________________________________________")
         operand_type = op.result.type
         if not isinstance(operand_type, VectorType):
             return
@@ -78,50 +74,42 @@ class LowerBinaryFloatVectorOp(RewritePattern):
 @dataclass
 class LowerEterogeneousBinaryFloatVectorOp(RewritePattern):
     arith_op_cls: type[arith.FloatingPointLikeBinaryOp]
-    riscv_d_op_cls: type[riscv.RdRsRsFloatOperationWithFastMath]
-    riscv_snitch_v_f32_op_cls: type[riscv.RdRsRsFloatOperationWithFastMath]
-    riscv_snitch_v_f16_op_cls: type[riscv.RdRsRsFloatOperationWithFastMath]
+    riscv_snitch_v_f32_op_cls: type[riscv_snitch.RdRsAccumulatingFloatOperation]
 
     def match_and_rewrite(self, op: Operation, rewriter: PatternRewriter) -> None:
         if not isinstance(op, self.arith_op_cls):
             return
 
         operand_type = op.result.type
-        if not isinstance(operand_type, VectorType):
+        if op.lhs.type != operand_type:
             return
-        shape = operand_type.shape
-        count = prod(dim.data for dim in shape.data)
-
-        operand_type = cast(VectorType[Any], operand_type)
-        scalar_type = operand_type.element_type
+        if not isinstance(op.rhs.type, VectorType):
+            return
+        if not isinstance(operand_type, Float16Type | Float32Type):
+            return
 
         lhs = UnrealizedConversionCastOp.get((op.lhs,), (_FLOAT_REGISTER_TYPE,))
         rhs = UnrealizedConversionCastOp.get((op.rhs,), (_FLOAT_REGISTER_TYPE,))
 
-        match scalar_type:
-            case Float64Type():
-                if count != 1:
-                    return
-                cls = self.riscv_d_op_cls
+        match operand_type:
             case Float32Type():
-                if count != 2:
-                    return
                 cls = self.riscv_snitch_v_f32_op_cls
-            case Float16Type():
-                if count != 4:
-                    return
-                cls = self.riscv_snitch_v_f16_op_cls
+            # case Float16Type():
+            #     cls = self.riscv_snitch_v_f16_op_cls
             case _:
                 assert False, f"Unexpected float type {op.lhs.type}"
 
-        rv_flags = riscv.FastMathFlagsAttr("none")
-        if op.fastmath is not None:
-            rv_flags = riscv.FastMathFlagsAttr(op.fastmath.data)
+        # We ignore fast math here...?
+        # Doesn't seem to be defined in Riscv_snitch
+        # rv_flags = riscv.FastMathFlagsAttr("none")
+        # if op.fastmath is not None:
+        #     rv_flags = riscv.FastMathFlagsAttr(op.fastmath.data)
 
-        new_op = cls(lhs, rhs, rd=_FLOAT_REGISTER_TYPE, fastmath=rv_flags)
-        cast_op = UnrealizedConversionCastOp.get((new_op.rd,), (op.result.type,))
+        new_op = cls(rd=lhs, rs=rhs)
+        # Do we need this?
+        # cast_op = UnrealizedConversionCastOp.get((new_op.rd,), (op.result.type,))
 
-        rewriter.replace_matched_op((lhs, rhs, new_op, cast_op))
+        rewriter.replace_matched_op((lhs, rhs, new_op))
 
 lower_arith_addf = LowerBinaryFloatVectorOp(
     arith.Addf, riscv.FAddDOp, riscv_snitch.VFAddSOp, riscv_snitch.VFAddHOp
@@ -129,6 +117,10 @@ lower_arith_addf = LowerBinaryFloatVectorOp(
 
 lower_arith_mulf = LowerBinaryFloatVectorOp(
     arith.Mulf, riscv.FMulDOp, riscv_snitch.VFMulSOp, riscv_snitch.VFMulHOp
+)
+
+lower_etero_arith_addf = LowerEterogeneousBinaryFloatVectorOp(
+    arith.Addf, riscv_snitch.VFSumSOp
 )
 
 
@@ -141,6 +133,7 @@ class ConvertArithToRiscvSnitchPass(ModulePass):
                 [
                     lower_arith_addf,
                     lower_arith_mulf,
+                    lower_etero_arith_addf,
                 ]
             ),
             apply_recursively=False,
