@@ -1511,8 +1511,6 @@ def irdl_op_verify_arg_list(
     ) -> None:
         """Verify a single argument."""
         try:
-            print("ARG DEF ------------------------------")
-            print(arg_def)
             arg_def.constr.verify(tuple(a.type for a in arg), constraint_context)
         except Exception as e:
             if len(arg) == 1:
