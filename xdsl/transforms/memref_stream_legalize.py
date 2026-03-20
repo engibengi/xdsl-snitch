@@ -123,16 +123,24 @@ class MemrefStreamGenericLegalize(RewritePattern):
     ) -> None:
         # Collect block arguments that need to be legalized
         legalizations: dict[int, StreamingVectorLegalizationType] = {}
+        args_len = len(op.body.block.args)
         for i, arg in enumerate(op.body.block.args):
+            if op.iterator_types.data[-1].data == IteratorType.PARALLEL and i >= args_len - 2:
+                continue
             legal = _legalize_attr(arg.type)
             if not isinstance(legal, StreamingAlreadyLegalType):
                 legalizations[i] = legal
         if not legalizations:
             return
-        # if op.iterator_types.data[-1].data != IteratorType.PARALLEL:
-        #     raise DiagnosticException(
-        #         "iterators other than 'parallel' are not supported yet"
-        #     )
+        for iterator in op.iterator_types.data[:-1]:
+            if iterator.data != IteratorType.PARALLEL:
+                raise DiagnosticException(
+                    "iterators other than 'parallel' are not supported in positions first to second to last"
+                )
+        if op.iterator_types.data[-1].data != IteratorType.PARALLEL and op.iterator_types.data[-1].data != IteratorType.REDUCTION:
+            raise DiagnosticException(
+                "iterators other than 'parallel' and 'reduction' are not supported in last position"
+            )
         # Check that vectorized bounds are compatible with all no. of lanes
         # involved in legalizations
         print(f"Data[-1]: {op.bounds.data[-1]}")
