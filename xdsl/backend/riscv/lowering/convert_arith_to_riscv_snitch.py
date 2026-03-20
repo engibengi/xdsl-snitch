@@ -81,12 +81,13 @@ class LowerEterogeneousBinaryFloatVectorOp(RewritePattern):
             return
 
         operand_type = op.result.type
-        if op.lhs.type != operand_type:
+        if op.lhs.type != operand_type and op.rhs.type != operand_type:
             return
-        if not isinstance(op.rhs.type, VectorType):
+        if not(isinstance(op.rhs.type, VectorType) or isinstance(op.lhs.type, VectorType)):
             return
         if not isinstance(operand_type, Float16Type | Float32Type):
             return
+        vector_right = isinstance(op.rhs.type, VectorType)
 
         lhs = UnrealizedConversionCastOp.get((op.lhs,), (_FLOAT_REGISTER_TYPE,))
         rhs = UnrealizedConversionCastOp.get((op.rhs,), (_FLOAT_REGISTER_TYPE,))
@@ -104,8 +105,9 @@ class LowerEterogeneousBinaryFloatVectorOp(RewritePattern):
         # rv_flags = riscv.FastMathFlagsAttr("none")
         # if op.fastmath is not None:
         #     rv_flags = riscv.FastMathFlagsAttr(op.fastmath.data)
-
-        new_op = cls(rd=lhs, rs=rhs)
+        rd = lhs if vector_right else rhs
+        rs = rhs if vector_right else lhs
+        new_op = cls(rd=rd, rs=rs)
         # Do we need this?
         # cast_op = UnrealizedConversionCastOp.get((new_op.rd,), (op.result.type,))
 
