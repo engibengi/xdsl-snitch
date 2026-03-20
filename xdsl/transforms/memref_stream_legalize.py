@@ -196,7 +196,7 @@ class MemrefStreamGenericLegalize(RewritePattern):
             print(f"OPERATION USES: {arg.uses}")
             to_be_legalized.update(use.operation for use in arg.uses)
         # Legalize payload
-        _legalize_block(new_body.block, to_be_legalized, rewriter)
+        _legalize_block(new_body.block, to_be_legalized, rewriter, True if op.iterator_types.data[-1].data == IteratorType.REDUCTION else False)
 
         rewriter.replace_matched_op(
             memref_stream.GenericOp(
