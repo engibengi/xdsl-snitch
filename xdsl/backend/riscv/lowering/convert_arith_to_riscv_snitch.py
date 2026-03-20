@@ -35,7 +35,7 @@ class LowerBinaryFloatVectorOp(RewritePattern):
         if not isinstance(op, self.arith_op_cls):
             return
         print("OP _________________________________________")
-        print(op)
+        print(op.keys())
         print("____________________________________________")
         operand_type = op.result.type
         if not isinstance(operand_type, VectorType):
