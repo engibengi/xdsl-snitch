@@ -185,7 +185,9 @@ class MemrefStreamGenericLegalize(RewritePattern):
         # Starting point for block legalization
         to_be_legalized: set[Operation] = set()
         for i, arg in enumerate(new_body.block.args):
+            print(i)
             if i not in legalizations:
+                print("NOT TO LEGALIZE")
                 continue
             rewriter.modify_value_type(arg, legalizations[i])
             to_be_legalized.update(use.operation for use in arg.uses)
