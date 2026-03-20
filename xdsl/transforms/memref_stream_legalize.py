@@ -89,12 +89,15 @@ def _is_safe_to_legalize(op: Operation) -> bool:
 
 
 def _legalize_block(
-    block: Block, to_be_legalized: set[Operation], rewriter: PatternRewriter
+    block: Block, to_be_legalized: set[Operation], rewriter: PatternRewriter, is_reduction: bool = False
 ) -> None:
     # Linearly scan the block and update the set of ops that we need to look into
     # by following uses
-    for op in block.ops:
+    for i, op in enumerate(block.ops):
         if op not in to_be_legalized:
+            continue
+        if i >= len(block.ops) - 2 and is_reduction:
+            to_be_legalized.remove(op)
             continue
         to_be_legalized.remove(op)
         if not _is_safe_to_legalize(op):
@@ -123,15 +126,15 @@ class MemrefStreamGenericLegalize(RewritePattern):
     ) -> None:
         # Collect block arguments that need to be legalized
         legalizations: dict[int, StreamingVectorLegalizationType] = {}
-        args_len = len(op.body.block.args)
+        # args_len = len(op.body.block.args)
         for i, arg in enumerate(op.body.block.args):
-            print(args_len)
-            print(i)
-            print(op.iterator_types.data[-1].data)
-            print(arg)
-            if op.iterator_types.data[-1].data == IteratorType.REDUCTION and i >= args_len - 1:
-                print("Going here")
-                continue
+            # print(args_len)
+            # print(i)
+            # print(op.iterator_types.data[-1].data)
+            # print(arg)
+            # if op.iterator_types.data[-1].data == IteratorType.REDUCTION and i >= args_len - 1:
+            #     print("Going here")
+            #     continue
             legal = _legalize_attr(arg.type)
             if not isinstance(legal, StreamingAlreadyLegalType):
                 legalizations[i] = legal
