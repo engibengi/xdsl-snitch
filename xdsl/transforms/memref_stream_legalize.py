@@ -128,12 +128,7 @@ class MemrefStreamGenericLegalize(RewritePattern):
         legalizations: dict[int, StreamingVectorLegalizationType] = {}
         args_len = len(op.body.block.args)
         for i, arg in enumerate(op.body.block.args):
-            # print(args_len)
-            # print(i)
-            # print(op.iterator_types.data[-1].data)
-            # print(arg)
             if op.iterator_types.data[-1].data == IteratorType.REDUCTION and i >= args_len - 1:
-                print("Going here")
                 continue
             legal = _legalize_attr(arg.type)
             if not isinstance(legal, StreamingAlreadyLegalType):
@@ -151,9 +146,6 @@ class MemrefStreamGenericLegalize(RewritePattern):
             )
         # Check that vectorized bounds are compatible with all no. of lanes
         # involved in legalizations
-        print(f"Data[-1]: {op.bounds.data[-1]}")
-        print(f"value: {op.bounds.data[-1].value}")
-        print(f"data: {op.bounds.data[-1].value.data}")
         innermost_bound = op.bounds.data[-1].value.data
         vector_lengths: set[int] = set()
         for i, v in legalizations.items():
@@ -188,12 +180,9 @@ class MemrefStreamGenericLegalize(RewritePattern):
         # Starting point for block legalization
         to_be_legalized: set[Operation] = set()
         for i, arg in enumerate(new_body.block.args):
-            print(i)
             if i not in legalizations:
-                print("NOT TO LEGALIZE")
                 continue
             rewriter.modify_value_type(arg, legalizations[i])
-            print(f"OPERATION USES: {arg.uses}")
             to_be_legalized.update(use.operation for use in arg.uses)
         # Legalize payload
         _legalize_block(new_body.block, to_be_legalized, rewriter, True if op.iterator_types.data[-1].data == IteratorType.REDUCTION else False)
