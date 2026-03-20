@@ -113,9 +113,6 @@ class Reduction(IRDLOperation):
     res: OpResult = result_def(AnyAttr())
 
     def verify_(self):
-        print("----------------------------")
-        print("Reduction verify")
-        print("----------------------------")
         assert isa(self.source.type, VectorType[Attribute])
 
         if self.source.type.element_type != self.res.type:
