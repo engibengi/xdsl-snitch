@@ -128,6 +128,7 @@ class MemrefStreamGenericLegalize(RewritePattern):
             print(args_len)
             print(i)
             print(op.iterator_types.data[-1].data)
+            print(arg)
             if op.iterator_types.data[-1].data == IteratorType.REDUCTION and i >= args_len - 1:
                 print("Going here")
                 continue
