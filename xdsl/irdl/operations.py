@@ -1510,9 +1510,12 @@ def irdl_op_verify_arg_list(
         arg: Sequence[SSAValue], arg_def: ResultDef | OperandDef, arg_idx: int
     ) -> None:
         """Verify a single argument."""
+
+        
         try:
             arg_def.constr.verify(tuple(a.type for a in arg), constraint_context)
         except Exception as e:
+            print('verify sequence to check error input',tuple(a.type for a in arg), constraint_context)
             if len(arg) == 1:
                 pos = f"{arg_idx}"
             else:
