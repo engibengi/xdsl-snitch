@@ -953,6 +953,20 @@ class VFSumSOp(RdRsAccumulatingFloatOperation):
     traits = frozenset((Pure(),))
 
 
+@irdl_op_definition
+class VFSumHOp(RdRsAccumulatingFloatOperation):
+    """
+    Performs sum of f16 values from rs and accumulates the result in the lower f16 value
+    of the rd operand:
+
+    f[rd][lo] = f[rs][hi] + f[rs][mh] + f[rs][ml] + f[rs][lo] + f[rd][lo]
+    """
+
+    name = "riscv_snitch.vfsum.h"
+
+    traits = frozenset((Pure(),))
+
+
 # endregion
 
 RISCV_Snitch = Dialect(
@@ -979,6 +993,7 @@ RISCV_Snitch = Dialect(
         VFCpkASSOp,
         VFMacSOp,
         VFSumSOp,
+        VFSumHOp,
         VFAddHOp,
         VFMaxSOp,
     ],

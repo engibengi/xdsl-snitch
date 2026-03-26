@@ -75,6 +75,7 @@ class LowerBinaryFloatVectorOp(RewritePattern):
 class LowerEterogeneousBinaryFloatVectorOp(RewritePattern):
     arith_op_cls: type[arith.FloatingPointLikeBinaryOp]
     riscv_snitch_v_f32_op_cls: type[riscv_snitch.RdRsAccumulatingFloatOperation]
+    riscv_snitch_v_f16_op_cls: type[riscv_snitch.RdRsAccumulatingFloatOperation]
 
     def match_and_rewrite(self, op: Operation, rewriter: PatternRewriter) -> None:
         if not isinstance(op, self.arith_op_cls):
@@ -95,8 +96,8 @@ class LowerEterogeneousBinaryFloatVectorOp(RewritePattern):
         match operand_type:
             case Float32Type():
                 cls = self.riscv_snitch_v_f32_op_cls
-            # case Float16Type():
-            #     cls = self.riscv_snitch_v_f16_op_cls
+            case Float16Type():
+                cls = self.riscv_snitch_v_f16_op_cls
             case _:
                 assert False, f"Unexpected float type {op.lhs.type}"
 
@@ -122,7 +123,7 @@ lower_arith_mulf = LowerBinaryFloatVectorOp(
 )
 
 lower_etero_arith_addf = LowerEterogeneousBinaryFloatVectorOp(
-    arith.Addf, riscv_snitch.VFSumSOp
+    arith.Addf, riscv_snitch.VFSumSOp, riscv_snitch.VFSumHOp
 )
 
 
