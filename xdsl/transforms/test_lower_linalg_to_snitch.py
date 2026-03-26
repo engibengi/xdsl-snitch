@@ -4,6 +4,7 @@ from xdsl.backend.riscv.lowering import (
     convert_arith_to_riscv,
     convert_arith_to_riscv_snitch,
     convert_func_to_riscv_func,
+    convert_memref_to_riscv_snitch,
     convert_memref_to_riscv,
     convert_riscv_scf_to_riscv_cf,
     convert_scf_to_riscv_scf,
@@ -51,6 +52,7 @@ OPTIMISE_MEMREF_STREAM_PASSES: tuple[ModulePass, ...] = (
 
 LOWER_MEMREF_STREAM_TO_SNITCH_STREAM_PASSES: tuple[ModulePass, ...] = (
     canonicalize.CanonicalizePass(),
+    convert_memref_to_riscv_snitch.ConvertMemrefToRiscvSnitchPass(),
     convert_memref_to_riscv.ConvertMemrefToRiscvPass(),
     lower_affine.LowerAffinePass(),
     convert_scf_to_riscv_scf.ConvertScfToRiscvPass(),

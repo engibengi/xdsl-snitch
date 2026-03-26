@@ -10,6 +10,7 @@ from xdsl.backend.register_allocatable import RegisterConstraints
 from xdsl.backend.riscv.traits import StaticInsnRepresentation
 from xdsl.dialects import riscv, stream
 from xdsl.dialects.builtin import (
+    AnyIntegerAttr,
     IntAttr,
     IntegerAttr,
     IntegerType,
@@ -22,10 +23,13 @@ from xdsl.dialects.riscv import (
     FastMathFlagsAttr,
     FloatRegisterType,
     IntRegisterType,
+    LabelAttr,
     RdRsRsOperation,
     RISCVAsmOperation,
     RISCVInstruction,
     RsRsIntegerOperation,
+    RdRsImmFloatOperation,
+    RsRsImmFloatOperation,
     SImm12Attr,
     UImm5Attr,
     parse_immediate_value,
@@ -63,6 +67,7 @@ from xdsl.traits import (
     ensure_terminator,
 )
 from xdsl.utils.exceptions import VerifyException
+from xdsl.utils.hints import isa
 
 # region Snitch Extensions
 
@@ -966,6 +971,123 @@ class VFSumHOp(RdRsAccumulatingFloatOperation):
 
     traits = frozenset((Pure(),))
 
+
+# ADDED LOAD AND STORE OPERATION FOR HALF FLOAT
+
+def _assembly_arg_str(arg: AssemblyInstructionArg) -> str:
+    if isa(arg, AnyIntegerAttr):
+        return f"{arg.value.data}"
+    elif isinstance(arg, int):
+        return f"{arg}"
+    elif isinstance(arg, LabelAttr):
+        return arg.data
+    elif isinstance(arg, str):
+        return arg
+    elif isinstance(arg, IntRegisterType):
+        return arg.register_name
+    elif isinstance(arg, FloatRegisterType):
+        return arg.register_name
+    else:
+        if isinstance(arg.type, IntRegisterType):
+            reg = arg.type.register_name
+            return reg
+        elif isinstance(arg.type, FloatRegisterType):
+            reg = arg.type.register_name
+            return reg
+        else:
+            assert False, f"{arg.type}"
+    assert False, f"{arg}"
+
+def _append_comment(line: str, comment: StringAttr | None) -> str:
+    if comment is None:
+        return line
+
+    padding = " " * max(0, 48 - len(line))
+
+    return f"{line}{padding} # {comment.data}"
+
+def _assembly_line(
+    name: str,
+    arg_str: str,
+    comment: StringAttr | None = None,
+    is_indented: bool = True,
+) -> str:
+    code = "    " if is_indented else ""
+    code += name
+    if arg_str:
+        code += f" {arg_str}"
+    code = _append_comment(code, comment)
+    return code
+
+class FLhOpHasCanonicalizationPatternTrait(HasCanonicalizationPatternsTrait):
+    @classmethod
+    def get_canonicalization_patterns(cls) -> tuple[RewritePattern, ...]:
+        from xdsl.transforms.canonicalization_patterns.riscv import (
+            LoadHalfWithKnownOffset,
+        )
+
+        return (LoadHalfWithKnownOffset(),)
+
+@irdl_op_definition
+class FLhOp(RdRsImmFloatOperation):
+    """
+    Load a half-precision value from memory into floating-point register rd.
+
+    f[rd] = M[x[rs1] + sext(offset)][15:0]
+
+    https://msyksphinz-self.github.io/riscv-isadoc/html/rvfd.html#fld
+    """
+
+    name = "riscv_snitch.flh"
+
+    traits = frozenset((FLhOpHasCanonicalizationPatternTrait(),))
+
+    def assembly_line(self) -> str | None:
+        instruction_name = self.assembly_instruction_name()
+        value = _assembly_arg_str(self.rd)
+        imm = _assembly_arg_str(self.immediate)
+        offset = _assembly_arg_str(self.rs1)
+        if isinstance(self.immediate, LabelAttr):
+            return _assembly_line(
+                instruction_name, f"{value}, {imm}, {offset}", self.comment
+            )
+        else:
+            return _assembly_line(
+                instruction_name, f"{value}, {imm}({offset})", self.comment
+            )
+
+
+class FShOpHasCanonicalizationPatternTrait(HasCanonicalizationPatternsTrait):
+    @classmethod
+    def get_canonicalization_patterns(cls) -> tuple[RewritePattern, ...]:
+        from xdsl.transforms.canonicalization_patterns.riscv import (
+            StoreHalfWithKnownOffset,
+        )
+
+        return (StoreHalfWithKnownOffset(),)
+
+@irdl_op_definition
+class FShOp(RsRsImmFloatOperation):
+    """
+    Store a single-precision value from floating-point register rs2 to memory.
+
+    M[x[rs1] + offset] = f[rs2]
+
+    https://msyksphinz-self.github.io/riscv-isadoc/html/rvfd.html#fsw
+    """
+
+    name = "riscv_snitch.fsh"
+
+    traits = frozenset((FShOpHasCanonicalizationPatternTrait(),))
+
+    def assembly_line(self) -> str | None:
+        instruction_name = self.assembly_instruction_name()
+        value = _assembly_arg_str(self.rs2)
+        imm = _assembly_arg_str(self.immediate)
+        offset = _assembly_arg_str(self.rs1)
+        return _assembly_line(
+            instruction_name, f"{value}, {imm}({offset})", self.comment
+        )
 
 # endregion
 

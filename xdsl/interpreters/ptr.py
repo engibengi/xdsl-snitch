@@ -89,6 +89,7 @@ int32 = XType(int, "<i")
 int64 = XType(int, "<q")
 float32 = XType(float, "<f")
 float64 = XType(float, "<d")
+float16 = XType(float, "<h")
 
 
 def index(bitwidth: Literal[32, 64]) -> XType[int]:
@@ -159,6 +160,10 @@ class TypedPtr(Generic[_T]):
     @staticmethod
     def new_float64(els: Sequence[float]) -> TypedPtr[float]:
         return TypedPtr[float].new(els, xtype=float64)
+    
+    @staticmethod
+    def new_float16(els: Sequence[float]) -> TypedPtr[float]:
+        return TypedPtr[float].new(els, xtype=float16)
 
     @staticmethod
     def new_int32(els: Sequence[int]) -> TypedPtr[int]:
