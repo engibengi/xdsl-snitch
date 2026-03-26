@@ -179,7 +179,7 @@ class BinaryOperation(IRDLOperation, Generic[_T]):
 
     T = Annotated[Attribute, ConstraintVar("T"), _T]
 
-    lhs: Operand = operand_def(T | VectorType[T])
+    lhs: Operand = operand_def(VectorType[T])
     rhs: Operand = operand_def(T | VectorType[T])
     result: OpResult = result_def(T)
 
