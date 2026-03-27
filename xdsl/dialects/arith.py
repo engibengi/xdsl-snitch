@@ -179,8 +179,8 @@ class BinaryOperation(IRDLOperation, Generic[_T]):
 
     T = Annotated[Attribute, ConstraintVar("T"), _T]
 
-    lhs: Operand = operand_def(VectorType[T])
-    rhs: Operand = operand_def(T | VectorType[T])
+    lhs: Operand = operand_def(T)
+    rhs: Operand = operand_def(T)
     result: OpResult = result_def(T)
 
     def __init__(
@@ -848,8 +848,123 @@ class Select(IRDLOperation):
         printer.print_attribute(self.result.type)
 
 
+# @irdl_op_definition
+# class Addf(FloatingPointLikeBinaryOp):
+#     name = "arith.addf"
+
+#     traits = frozenset([Pure()])
+
+class BinaryFloatOperation(IRDLOperation, Generic[_T]):
+    """Another class for binary operations supporting eterogeneous operands
+    
+    Right now limited to float"""
+
+    T = Annotated[Attribute, ConstraintVar("T"), _T]
+
+    lhs: Operand = operand_def(AnyOf([AnyFloat,VectorType]))
+    rhs: Operand = operand_def(AnyOf([AnyFloat,VectorType]))
+    result: OpResult = result_def(AnyOf([AnyFloat,VectorType]))
+
+    def __init__(
+        self,
+        operand1: Operation | SSAValue,
+        operand2: Operation | SSAValue,
+        result_type: Attribute | None = None,
+    ):
+        if result_type is None:
+            result_type = SSAValue.get(operand1).type
+        super().__init__(operands=[operand1, operand2], result_types=[result_type])
+
+    @classmethod
+    def parse(cls, parser: Parser):
+        lhs = parser.parse_unresolved_operand()
+        parser.parse_punctuation(",")
+        rhs = parser.parse_unresolved_operand()
+        parser.parse_punctuation(":")
+        result_type = parser.parse_type()
+        (lhs, rhs) = parser.resolve_operands([lhs, rhs], 2 * [result_type], parser.pos)
+        return cls(lhs, rhs, result_type)
+
+    def print(self, printer: Printer):
+        printer.print(" ")
+        printer.print_ssa_value(self.lhs)
+        printer.print(", ")
+        printer.print_ssa_value(self.rhs)
+        printer.print(" : ")
+        printer.print_attribute(self.result.type)
+
+    def __hash__(self) -> int:
+        return id(self)
+
+    def verify(self, verify_nested_ops: bool = True):
+        lhs_type = self.lhs.type
+        rhs_type = self.rhs.type
+        result_type = self.result.type
+
+        lhs_elem = lhs_type.element_type if isinstance(lhs_type, VectorType) else lhs_type
+        rhs_elem = rhs_type.element_type if isinstance(rhs_type, VectorType) else rhs_type
+
+        if lhs_elem != rhs_elem:
+            raise VerifyException(
+                f"lhs element type '{lhs_elem}' must match rhs element type '{rhs_elem}'"
+            )
+
+        if lhs_type == rhs_type:
+            if result_type != lhs_type:
+                raise VerifyException(
+                    f"result type '{result_type}' must match operand type '{lhs_type}'"
+                )
+        else:
+            if result_type != lhs_elem:
+                raise VerifyException(
+                    f"result type '{result_type}' must be scalar element type "
+                    f"'{lhs_elem}' for mixed scalar/vector operands"
+                )
+
+
+
+
+class BinaryFloatOperationWithFastMath(Generic[_T], BinaryFloatOperation[_T]):
+    fastmath = opt_prop_def(FastMathFlagsAttr)
+
+    def __init__(
+        self,
+        operand1: Operation | SSAValue,
+        operand2: Operation | SSAValue,
+        flags: FastMathFlagsAttr | None = None,
+        result_type: Attribute | None = None,
+    ):
+        super().__init__(operand1, operand2, result_type)
+        self.fastmath = flags
+
+    @classmethod
+    def parse(cls, parser: Parser):
+        lhs = parser.parse_unresolved_operand()
+        parser.parse_punctuation(",")
+        rhs = parser.parse_unresolved_operand()
+        flags = FastMathFlagsAttr("none")
+        if parser.parse_optional_keyword("fastmath") is not None:
+            flags = FastMathFlagsAttr(FastMathFlagsAttr.parse_parameter(parser))
+        parser.parse_punctuation(":")
+        result_type = parser.parse_type()
+        (lhs, rhs) = parser.resolve_operands([lhs, rhs], 2* [result_type], parser.pos)
+        return cls(lhs, rhs, flags, result_type)
+
+    def print(self, printer: Printer):
+        printer.print(" ")
+        printer.print_ssa_value(self.lhs)
+        printer.print(", ")
+        printer.print_ssa_value(self.rhs)
+        if self.fastmath is not None and self.fastmath != FastMathFlagsAttr("none"):
+            printer.print(" fastmath")
+            self.fastmath.print_parameter(printer)
+        printer.print(" : ")
+        printer.print_attribute(self.result.type)
+
 @irdl_op_definition
-class Addf(FloatingPointLikeBinaryOp):
+class Addf(BinaryFloatOperationWithFastMath[
+    Annotated[Attribute, floatingPointLike]
+]):
     name = "arith.addf"
 
     traits = frozenset([Pure()])
