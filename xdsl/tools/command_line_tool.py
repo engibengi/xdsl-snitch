@@ -275,6 +275,11 @@ def get_all_passes() -> dict[str, Callable[[], type[ModulePass]]]:
         from xdsl.backend.riscv.lowering import convert_memref_to_riscv
 
         return convert_memref_to_riscv.ConvertMemrefToRiscvPass
+    
+    def get_convert_memref_to_riscv_snitch():
+        from xdsl.backend.riscv.lowering import convert_memref_to_riscv_snitch
+
+        return convert_memref_to_riscv_snitch.ConvertMemrefToRiscvSnitchPass
 
     def get_convert_memref_stream_to_loops():
         from xdsl.transforms import convert_memref_stream_to_loops
@@ -399,6 +404,7 @@ def get_all_passes() -> dict[str, Callable[[], type[ModulePass]]]:
         "convert-linalg-to-loops": get_convert_linalg_to_loops,
         "convert-memref-stream-to-loops": get_convert_memref_stream_to_loops,
         "convert-memref-to-riscv": get_convert_memref_to_riscv,
+        "convert-memref-to-riscv-snitch": get_convert_memref_to_riscv_snitch,
         "convert-ml-program-to-memref": get_convert_ml_program_to_memref,
         "convert-onnx-to-linalg": get_convert_onnx_to_linalg,
         "convert-memref-stream-to-snitch-stream": get_convert_memref_stream_to_snitch_stream,
