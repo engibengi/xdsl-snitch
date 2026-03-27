@@ -861,9 +861,9 @@ class BinaryFloatOperation(IRDLOperation, Generic[_T]):
 
     T = Annotated[Attribute, ConstraintVar("T"), _T]
 
-    lhs: Operand = operand_def(AnyOf([AnyFloat,VectorType]))
-    rhs: Operand = operand_def(AnyOf([AnyFloat,VectorType]))
-    result: OpResult = result_def(AnyOf([AnyFloat,VectorType]))
+    lhs: Operand = operand_def(AnyFloat | VectorType)
+    rhs: Operand = operand_def(AnyFloat | VectorType)
+    result: OpResult = result_def(AnyFloat | VectorType)
 
     def __init__(
         self,
