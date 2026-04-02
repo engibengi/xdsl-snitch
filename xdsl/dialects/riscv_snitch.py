@@ -30,6 +30,7 @@ from xdsl.dialects.riscv import (
     RsRsIntegerOperation,
     RdRsImmFloatOperation,
     RsRsImmFloatOperation,
+    RdRsOperation,
     SImm12Attr,
     UImm5Attr,
     parse_immediate_value,
@@ -1089,6 +1090,37 @@ class FShOp(RsRsImmFloatOperation):
             instruction_name, f"{value}, {imm}({offset})", self.comment
         )
 
+
+class FMvHHasCanonicalizationPatternsTrait(HasCanonicalizationPatternsTrait):
+    @classmethod
+    def get_canonicalization_patterns(cls) -> tuple[RewritePattern, ...]:
+        from xdsl.transforms.canonicalization_patterns.riscv import RemoveRedundantFMvH
+
+        return (RemoveRedundantFMvH(),)
+
+
+@irdl_op_definition
+class FMvHOp(RdRsOperation[FloatRegisterType, FloatRegisterType]):
+    """
+    A pseudo instruction to copy contents of one float register to another.
+
+    Equivalent to `fsgnj.s rd, rs, rs`.
+
+    Both clang and gcc emit `fsw rs, 0(x); flw rd, 0(x)` to copy floats, possibly because
+    storing and loading bits from memory is a lower overhead in practice than reasoning
+    about floating-point values.
+    """
+
+    name = "riscv.fmv.h"
+
+    traits = frozenset(
+        (
+            Pure(),
+            FMvHHasCanonicalizationPatternsTrait(),
+        )
+    )
+
+
 # endregion
 
 RISCV_Snitch = Dialect(
@@ -1118,6 +1150,7 @@ RISCV_Snitch = Dialect(
         VFSumHOp,
         VFAddHOp,
         VFMaxSOp,
+        FMvHOp,
     ],
     [],
 )
