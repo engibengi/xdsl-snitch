@@ -82,9 +82,9 @@ TEST_LOWER_LINALG_TO_SNITCH_PASSES: tuple[ModulePass, ...] = (
     canonicalize.CanonicalizePass(),
     convert_linalg_to_memref_stream.ConvertLinalgToMemrefStreamPass(),
     memref_stream_legalize.MemrefStreamLegalizePass(),
-    #*OPTIMISE_MEMREF_STREAM_PASSES,
-    #*LOWER_MEMREF_STREAM_TO_SNITCH_STREAM_PASSES,
-    #*LOWER_SNITCH_STREAM_TO_ASM_PASSES,
+    *OPTIMISE_MEMREF_STREAM_PASSES,
+    *LOWER_MEMREF_STREAM_TO_SNITCH_STREAM_PASSES,
+    *LOWER_SNITCH_STREAM_TO_ASM_PASSES,
 )
 
 LINALG_SNITCH_OPTIMIZATION_PASSES: tuple[ModulePass, ...] = (
