@@ -1,7 +1,7 @@
 from collections import Counter
 from collections.abc import Iterable, Iterator, Sequence
 
-from xdsl.dialects import builtin, riscv
+from xdsl.dialects import builtin, riscv, riscv_snitch
 from xdsl.ir import Attribute, Block, Operation, SSAValue
 from xdsl.pattern_rewriter import PatternRewriter
 from xdsl.rewriter import InsertPoint
@@ -60,6 +60,8 @@ def move_ops_for_value(
                 mv_op = riscv.FMvDOp(value, rd=rd)
             case builtin.Float32Type():
                 mv_op = riscv.FMVOp(value, rd=rd)
+            case builtin.Float16Type():
+                mv_op = riscv_snitch.FMvHOp(value, rd=rd)
             case _:
                 raise NotImplementedError(
                     f"Move operation for float register containing value of type {value.type} is not implemented"
