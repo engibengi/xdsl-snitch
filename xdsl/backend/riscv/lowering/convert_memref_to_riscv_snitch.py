@@ -220,7 +220,6 @@ class ConvertMemrefLoadOp(RewritePattern):
 
         shape = memref_type.get_shape()
         ops, ptr = get_strided_pointer(mem, indices, memref_type)
-        print("For float16")
         rewriter.insert_op_before_matched_op(ops)
         lw_op = riscv_snitch.FLhOp(
             ptr, 0, comment=f"load float from memref of shape {shape}"
