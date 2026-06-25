@@ -180,7 +180,7 @@ class ConvertMemrefStoreOp(RewritePattern):
         assert isinstance(op_memref_type := op.memref.type, memref.MemRefType)
         memref_type = cast(memref.MemRefType[Any], op_memref_type)
 
-        result_register_type = register_type_for_type(op.res.type)
+        result_register_type = register_type_for_type(op.value.type)
         if result_register_type is not riscv.FloatRegisterType:
             return
         float_type = cast(AnyFloat, memref_type.element_type)
@@ -189,43 +189,15 @@ class ConvertMemrefStoreOp(RewritePattern):
 
         value, mem, *indices = cast_operands_to_regs(rewriter)
 
-        # shape = memref_type.get_shape()
-        # ops, ptr = get_strided_pointer(mem, indices, memref_type)
-        
-        # Moved, if the code becomes dirty, then rewriter tries again, 
-        # and we enter an infinite loop, when f64/f32
-        # rewriter.insert_op_before_matched_op(ops)
-        match value.type:
-            case riscv.IntRegisterType():
-                print("INTEGER NOT WORKING")
-                # new_op = riscv.SwOp(
-                #     ptr, value, 0, comment=f"store int value to memref of shape {shape}"
-                # )
-                return
-            case riscv.FloatRegisterType():
-                float_type = cast(AnyFloat, memref_type.element_type)
-                match float_type:
-                    case Float16Type():
-                        shape = memref_type.get_shape()
-                        ops, ptr = get_strided_pointer(mem, indices, memref_type)
-                        rewriter.insert_op_before_matched_op(ops)
-                        new_op = riscv_snitch.FShOp(
-                            ptr,
-                            value,
-                            0,
-                            comment=f"store float value to memref of shape {shape}",
-                        )
-                    case Float32Type() | Float64Type():
-                        print("Float not working")
-                        # Handled by convert_memref_to_riscv, but kept just in case we need to change smth
-                        return
-                    case _:
-                        # Handled by convert_memref_to_riscv, but kept just in case we need to change smth
-                        return
-
-            case _:
-                # Handled by convert_memref_to_riscv, but kept just in case we need to change smth
-                return
+        shape = memref_type.get_shape()
+        ops, ptr = get_strided_pointer(mem, indices, memref_type)
+        rewriter.insert_op_before_matched_op(ops)
+        new_op = riscv_snitch.FShOp(
+            ptr,
+            value,
+            0,
+            comment=f"store float value to memref of shape {shape}",
+        )
 
         rewriter.replace_matched_op(new_op)
 
@@ -238,47 +210,22 @@ class ConvertMemrefLoadOp(RewritePattern):
         ), f"{op.memref.type}"
         memref_type = cast(memref.MemRefType[Any], op_memref_type)
 
+        result_register_type = register_type_for_type(op.res.type)
+        if result_register_type is not riscv.FloatRegisterType:
+            return
+        float_type = cast(AnyFloat, memref_type.element_type)
+        if not isinstance(float_type, Float16Type):
+            return
+
         mem, *indices = cast_operands_to_regs(rewriter)
 
-        # shape = memref_type.get_shape()
-        # ops, ptr = get_strided_pointer(mem, indices, memref_type)
-
-        # Moved, if the code becomes dirty, then rewriter tries again, 
-        # and we enter an infinite loop, when f64/f32
-        # rewriter.insert_op_before_matched_op(ops)
-
-        result_register_type = register_type_for_type(op.res.type)
-        print("doing it once")
-        match result_register_type:
-            case riscv.IntRegisterType:
-                print("INTEGER NOT WORKING")
-                # lw_op = riscv.LwOp(
-                #     ptr, 0, comment=f"load word from memref of shape {shape}"
-                # )
-                return
-            case riscv.FloatRegisterType:
-                print("Float type")
-                float_type = cast(AnyFloat, memref_type.element_type)
-                match float_type:
-                    case Float16Type():
-                        print("Float 16???")
-                        shape = memref_type.get_shape()
-                        ops, ptr = get_strided_pointer(mem, indices, memref_type)
-                        print("For float16")
-                        rewriter.insert_op_before_matched_op(ops)
-                        lw_op = riscv_snitch.FLhOp(
-                            ptr, 0, comment=f"load float from memref of shape {shape}"
-                        )
-                    case Float32Type() | Float64Type():
-                        # Handled by convert_memref_to_riscv, but kept just in case we need to change smth
-                        return
-                    case _:
-                        # Handled by convert_memref_to_riscv, but kept just in case we need to change smth
-                        return
-
-            case _:
-                # Handled by convert_memref_to_riscv, but kept just in case we need to change smth
-                return
+        shape = memref_type.get_shape()
+        ops, ptr = get_strided_pointer(mem, indices, memref_type)
+        print("For float16")
+        rewriter.insert_op_before_matched_op(ops)
+        lw_op = riscv_snitch.FLhOp(
+            ptr, 0, comment=f"load float from memref of shape {shape}"
+        )
 
         rewriter.replace_matched_op(
             [
@@ -291,7 +238,6 @@ class ConvertMemrefLoadOp(RewritePattern):
 class ConvertMemrefGlobalOp(RewritePattern):
     @op_type_rewrite_pattern
     def match_and_rewrite(self, op: memref.Global, rewriter: PatternRewriter):
-        print("Is it me?")
         initial_value = op.initial_value
 
         if not isinstance(initial_value, DenseIntOrFPElementsAttr):
