@@ -180,6 +180,13 @@ class ConvertMemrefStoreOp(RewritePattern):
         assert isinstance(op_memref_type := op.memref.type, memref.MemRefType)
         memref_type = cast(memref.MemRefType[Any], op_memref_type)
 
+        result_register_type = register_type_for_type(op.res.type)
+        if result_register_type is not riscv.FloatRegisterType:
+            return
+        float_type = cast(AnyFloat, memref_type.element_type)
+        if not isinstance(float_type, Float16Type):
+            return
+
         value, mem, *indices = cast_operands_to_regs(rewriter)
 
         # shape = memref_type.get_shape()
