@@ -184,16 +184,20 @@ class ConvertMemrefStoreOp(RewritePattern):
         shape = memref_type.get_shape()
         ops, ptr = get_strided_pointer(mem, indices, memref_type)
 
-        rewriter.insert_op_before_matched_op(ops)
+        # Moved, if the code becomes dirty, then rewriter tries again, 
+        # and we enter an infinite loop, when f64/f32
+        # rewriter.insert_op_before_matched_op(ops)
         match value.type:
             case riscv.IntRegisterType():
-                new_op = riscv.SwOp(
-                    ptr, value, 0, comment=f"store int value to memref of shape {shape}"
-                )
+                # new_op = riscv.SwOp(
+                #     ptr, value, 0, comment=f"store int value to memref of shape {shape}"
+                # )
+                return
             case riscv.FloatRegisterType():
                 float_type = cast(AnyFloat, memref_type.element_type)
                 match float_type:
                     case Float16Type():
+                        rewriter.insert_op_before_matched_op(ops)
                         new_op = riscv_snitch.FShOp(
                             ptr,
                             value,
