@@ -176,6 +176,7 @@ def get_strided_pointer(
 class ConvertMemrefStoreOp(RewritePattern):
     @op_type_rewrite_pattern
     def match_and_rewrite(self, op: memref.Store, rewriter: PatternRewriter):
+        print("Am i storing?")
         assert isinstance(op_memref_type := op.memref.type, memref.MemRefType)
         memref_type = cast(memref.MemRefType[Any], op_memref_type)
 
@@ -236,7 +237,7 @@ class ConvertMemrefLoadOp(RewritePattern):
         # rewriter.insert_op_before_matched_op(ops)
 
         result_register_type = register_type_for_type(op.res.type)
-
+        print("doing it once")
         match result_register_type:
             case riscv.IntRegisterType:
                 # lw_op = riscv.LwOp(
@@ -247,6 +248,7 @@ class ConvertMemrefLoadOp(RewritePattern):
                 float_type = cast(AnyFloat, memref_type.element_type)
                 match float_type:
                     case Float16Type():
+                        print("For float16")
                         rewriter.insert_op_before_matched_op(ops)
                         lw_op = riscv_snitch.FLhOp(
                             ptr, 0, comment=f"load float from memref of shape {shape}"
@@ -273,6 +275,7 @@ class ConvertMemrefLoadOp(RewritePattern):
 class ConvertMemrefGlobalOp(RewritePattern):
     @op_type_rewrite_pattern
     def match_and_rewrite(self, op: memref.Global, rewriter: PatternRewriter):
+        print("Is it me?")
         initial_value = op.initial_value
 
         if not isinstance(initial_value, DenseIntOrFPElementsAttr):
@@ -287,16 +290,17 @@ class ConvertMemrefGlobalOp(RewritePattern):
         # Might be useful as a helper for other passes in the future
         match element_type:
             case IntegerType():
-                bitwidth = element_type.width.data
-                if bitwidth != 32:
-                    raise DiagnosticException(
-                        f"Unsupported memref element type for riscv lowering: {element_type}"
-                    )
-                ints = [d.value.data for d in initial_value.data]
-                for i in ints:
-                    assert isinstance(i, int)
-                ints = cast(list[int], ints)
-                ptr = TypedPtr.new_int32(ints).raw
+                # bitwidth = element_type.width.data
+                # if bitwidth != 32:
+                #     raise DiagnosticException(
+                #         f"Unsupported memref element type for riscv lowering: {element_type}"
+                #     )
+                # ints = [d.value.data for d in initial_value.data]
+                # for i in ints:
+                #     assert isinstance(i, int)
+                # ints = cast(list[int], ints)
+                # ptr = TypedPtr.new_int32(ints).raw
+                return
             case Float16Type():
                 floats = [d.value.data for d in initial_value.data]
                 ptr = TypedPtr.new_float16(floats).raw
