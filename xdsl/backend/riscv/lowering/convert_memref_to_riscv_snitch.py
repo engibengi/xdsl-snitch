@@ -230,19 +230,24 @@ class ConvertMemrefLoadOp(RewritePattern):
 
         shape = memref_type.get_shape()
         ops, ptr = get_strided_pointer(mem, indices, memref_type)
-        rewriter.insert_op_before_matched_op(ops)
+
+        # Moved, if the code becomes dirty, then rewriter tries again, 
+        # and we enter an infinite loop, when f64/f32
+        # rewriter.insert_op_before_matched_op(ops)
 
         result_register_type = register_type_for_type(op.res.type)
 
         match result_register_type:
             case riscv.IntRegisterType:
-                lw_op = riscv.LwOp(
-                    ptr, 0, comment=f"load word from memref of shape {shape}"
-                )
+                # lw_op = riscv.LwOp(
+                #     ptr, 0, comment=f"load word from memref of shape {shape}"
+                # )
+                return
             case riscv.FloatRegisterType:
                 float_type = cast(AnyFloat, memref_type.element_type)
                 match float_type:
                     case Float16Type():
+                        rewriter.insert_op_before_matched_op(ops)
                         lw_op = riscv_snitch.FLhOp(
                             ptr, 0, comment=f"load float from memref of shape {shape}"
                         )
