@@ -106,42 +106,42 @@ class Broadcast(IRDLOperation):
             result_types=[VectorType(SSAValue.get(source).type, [1])],
         )
 
-@irdl_op_definition
-class Reduction(IRDLOperation):
-    name = "vector.reduction"
-    source: Operand = operand_def(VectorType)
-    res: OpResult = result_def(AnyAttr())
+#@irdl_op_definition
+#class Reduction(IRDLOperation):
+#    name = "vector.reduction"
+#    source: Operand = operand_def(VectorType)
+#    res: OpResult = result_def(AnyAttr())
+#
+#    def verify_(self):
+#        assert isa(self.source.type, VectorType[Attribute])
 
-    def verify_(self):
-        assert isa(self.source.type, VectorType[Attribute])
+#        if self.source.type.element_type != self.res.type:
+#            raise VerifyException(
+#                "Source vector and result operand must have the same element type."
+#            )
 
-        if self.source.type.element_type != self.res.type:
-            raise VerifyException(
-                "Source vector and result operand must have the same element type."
-            )
+#    @classmethod
+#    def parse(cls, parser: Parser):
+#        arg = parser.parse_identifier()
+#        parser.parse_punctuation(",")
+#        operand1 = parser.parse_unresolved_operand()
+#        parser.parse_punctuation(",")
+#        operand2 = parser.parse_unresolved_operand()
+#        parser.parse_punctuation(":")
+#        input_type = parser.parse_type()
+#        (operand1, operand2) = parser.resolve_operands(
+#            [operand1, operand2], 2 * [input_type], parser.pos
+#        )
 
-    @classmethod
-    def parse(cls, parser: Parser):
-        arg = parser.parse_identifier()
-        parser.parse_punctuation(",")
-        operand1 = parser.parse_unresolved_operand()
-        parser.parse_punctuation(",")
-        operand2 = parser.parse_unresolved_operand()
-        parser.parse_punctuation(":")
-        input_type = parser.parse_type()
-        (operand1, operand2) = parser.resolve_operands(
-            [operand1, operand2], 2 * [input_type], parser.pos
-        )
-
-        return cls(operand1, operand2, arg)
+#        return cls(operand1, operand2, arg)
 
 
-    @staticmethod
-    def get(source: Operation | SSAValue) -> Reduction:
-        return Reduction.build(
-            operands=[source],
-            result_types=[SSAValue.get(source).type],
-        )
+#    @staticmethod
+#    def get(source: Operation | SSAValue) -> Reduction:
+#        return Reduction.build(
+#            operands=[source],
+#            result_types=[SSAValue.get(source).type],
+#        )
 
 
 @irdl_op_definition
